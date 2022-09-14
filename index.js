@@ -1,13 +1,10 @@
-const express = require('express');
-const app = express();
 const config = {
 	port: process.env.PORT || 3300
 };
 
-app.get('/', (req, res) => {
-	res.send('welcome to express');
-});
+const httpServer = require('./src/http-server');
+const telegramBot = require('./src/telegram-bot');
 
-app.listen(config.port, () => {
-	console.log(`app.listen: ${config.port}`);
-});
+// httpServer.httpStart(config);
+telegramBot.init(config);
+telegramBot.start();
