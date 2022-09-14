@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const config = {
-	port: 80
+	port: 3300
 };
 
 app.get('/', (req, res) => {
