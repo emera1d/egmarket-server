@@ -1,0 +1,21 @@
+# common
+node_modules/
+logs
+build
+mock
+_user
+
+# env
+*.log
+.env
+
+#
+# package-lock.json
+
+# mac
+.DS_Store
+.vscode
+
+
+#
+src/static/font/
