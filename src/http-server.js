@@ -5,9 +5,9 @@ const sendResponse = (res, data) => {
 	res.send(data);
 }
 
-const bind = (ref) => {
-	return (req, res) => {
-		const result = ref();
+const bind = (action) => {
+	return async (req, res) => {
+		const result = await action(req, res);
 		const data = JSON.stringify(result);
 
 		sendResponse(res, data);
@@ -16,7 +16,14 @@ const bind = (ref) => {
 
 module.exports.httpStart = (config) => {
 	const express = require('express');
+	const bodyParser = require('body-parser');
+	const router = express.Router();
 	const app = express();
+	
+	// App use. Here we are configuring express to use body-parser as middle-ware.
+	app.use(bodyParser.urlencoded({ extended: false }));
+	app.use(bodyParser.json());
+	app.use(bodyParser.raw());
 
 	app.use((req, res, next) => {
 		res.append('Access-Control-Allow-Origin', ['*']);
@@ -25,14 +32,21 @@ module.exports.httpStart = (config) => {
 		next();
 	});
 
-	app.get('/', bind(mapi.ping));
-	app.get('/mapi', bind(mapi.root));
-	app.get('/mapi/status', bind(mapi.status));
-	app.get('/mapi/list', bind(mapi.list));
-	app.get('/mapi/placeorder', bind(mapi.placeorder));
+	app.post('/', bind(mapi.root));
+	app.post('/mapi', bind(mapi.mapi));
+	app.post('/mapi/status', bind(mapi.status));
+	app.post('/mapi/list', bind(mapi.list));
+	app.post('/mapi/profile/register', bind(mapi.profileregister));
+	app.post('/mapi/profile/orders', bind(mapi.profileorders));
+	app.post('/mapi/market/info', bind(mapi.marketinfo));
+	app.post('/mapi/market/data', bind(mapi.marketdata));
+	app.post('/mapi/searchforsale', bind(mapi.searchforsale));
+	app.post('/mapi/placeorder', bind(mapi.placeorder));
+	app.post('/mapi/revokeorder', bind(mapi.revokeorder));
+
+	// app.use('/', router);
 
 	app.listen(config.port, () => {
 		console.log(`app.listen: ${config.port}`);
 	});
 };
-

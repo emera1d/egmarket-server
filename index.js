@@ -3,11 +3,11 @@ const config = {
 };
 
 const httpServer = require('./src/http-server');
-const telegramBot = require('./src/telegram-bot');
+// const telegramBot = require('./src/telegram-bot');
 
 // api server
 httpServer.httpStart(config);
 
 // telegram bot
-telegramBot.init(config);
-telegramBot.start();
+// telegramBot.init(config);
+// telegramBot.start();
