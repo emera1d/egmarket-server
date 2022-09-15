@@ -5,6 +5,9 @@ const config = {
 const httpServer = require('./src/http-server');
 const telegramBot = require('./src/telegram-bot');
 
-// httpServer.httpStart(config);
+// api server
+httpServer.httpStart(config);
+
+// telegram bot
 telegramBot.init(config);
 telegramBot.start();

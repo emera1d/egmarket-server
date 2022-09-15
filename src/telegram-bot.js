@@ -16,7 +16,6 @@ class TelegramService {
 	start() {
 		const { port } = this.config;
 		this.telegram = new TelegramBot(TOKEN, {
-			port,
 			polling: true
 		});
 		// this.telegram = new TelegramBot(TOKEN, {

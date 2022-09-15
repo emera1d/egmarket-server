@@ -3,12 +3,7 @@ module.exports.httpStart = (config) => {
 	const app = express();
 
 
-	app.get('/', (req, res) => {
-		res.send('welcome to express');
-	});
-
-	app.get('/', (req, res) => {
-		
+	app.get('/mapi', (req, res) => {
 		res.send('welcome to express');
 	});
 
