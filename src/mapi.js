@@ -8,7 +8,7 @@ const makeBuyOrder = () => {};
 const makeSellOrder = () => {
 	return {
 		date: Date.now(),
-		index: sellOrders.length + 1,
+		index: market.sellOrders.length + 1,
 	};
 };
 
@@ -17,7 +17,7 @@ module.exports = {
 	root: () => ({ name: 'mapi', version: '1.0.0' }),
 	status: () => ({
 		buyOrders: market.buyOrders.length,
-		sellOrders: market.sellOrders,
+		sellOrders: market.sellOrders.length,
 	}),
 
 	// todo auth
@@ -30,7 +30,7 @@ module.exports = {
 		const order = makeSellOrder();
 		market.sellOrders.push(order);
 		
-		return { orderId: 1, success: true };
+		return { order: order, success: true };
 	},
 
 	list: () => {
