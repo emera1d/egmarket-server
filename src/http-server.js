@@ -5,6 +5,15 @@ const sendResponse = (res, data) => {
 	res.send(data);
 }
 
+const bind = (ref) => {
+	return (req, res) => {
+		const result = ref();
+		const data = JSON.stringify(result);
+
+		sendResponse(res, data);
+	};
+}
+
 module.exports.httpStart = (config) => {
 	const express = require('express');
 	const app = express();
@@ -13,25 +22,17 @@ module.exports.httpStart = (config) => {
 		res.append('Access-Control-Allow-Origin', ['*']);
 		res.append('Access-Control-Allow-Methods', 'GET,POST');
 		res.append('Access-Control-Allow-Headers', 'Content-Type');
-
 		next();
 	});
 
-	app.get('/', (req, res) => {
-		const result = mapi.ping();
-		const data = JSON.stringify(result);
-
-		sendResponse(res, data);
-	});
-
-	app.get('/mapi', (req, res) => {
-		const result = mapi.root();
-		const data = JSON.stringify(result);
-
-		sendResponse(res, data);
-	});
+	app.get('/', bind(mapi.ping));
+	app.get('/mapi', bind(mapi.root));
+	app.get('/mapi/status', bind(mapi.status));
+	app.get('/mapi/list', bind(mapi.list));
+	app.get('/mapi/placeorder', bind(mapi.placeorder));
 
 	app.listen(config.port, () => {
 		console.log(`app.listen: ${config.port}`);
 	});
 };
+
