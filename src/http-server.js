@@ -39,8 +39,10 @@ module.exports.httpStart = (config) => {
 	app.post('/mapi/market/info', bind(mapi.marketinfo));
 	app.post('/mapi/market/data', bind(mapi.marketdata));
 	app.post('/mapi/market/status', bind(mapi.marketstatus));
-	app.post('/mapi/profile/register', bind(mapi.profileregister));
-	app.post('/mapi/profile/orders', bind(mapi.profileorders));
+	app.post('/mapi/profiles/auth', bind(mapi.profilesauth));
+	app.post('/mapi/profiles/list', bind(mapi.profileslist));
+	app.post('/mapi/profiles/orders', bind(mapi.profilesorders));
+	app.post('/mapi/profiles/register', bind(mapi.profilesregister));
 	app.post('/mapi/orders/place', bind(mapi.ordersplace));
 	app.post('/mapi/orders/revoke', bind(mapi.ordersrevoke));
 	app.post('/mapi/orders/search', bind(mapi.orderssearch));

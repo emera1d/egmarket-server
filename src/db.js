@@ -9,7 +9,8 @@ class Db {
 			return acc;
 		}, {});
 
-		this.profiles = [];
+		// this.profiles = [];
+		this.profilesMap = {};
 		this.buyOrders = [];
 		this.sellOrders = [];
 	}
@@ -26,33 +27,18 @@ class Db {
 		return this.goodsMap[goodsId];
 	}
 
-	async queryProfileOrders(profileId) {
-		const sell = market.sellOrders.filter((iOrder) => {
-			return iOrder.profileId === profileId;
-		});
+	async addProfile({ tId, tNickname }) {
+		const profile = this._makeProfile({ tId, tNickname });
 
-		const buy = market.sellOrders.filter((iOrder) => {
-			return iOrder.profileId === profileId;
-		});
+		this.profilesMap[profile.id] = profile;
 
-		return { buy: buy, sell: sell };
+		return profile;
 	}
 
-	addOrder({ profileId, orderType, goodsId, amount, price }) {
-		const order = this._makeOrder({ profileId, orderType, goodsId, amount, price });
-
-		if (orderType === 'buy') {
-			this.buyOrders.push(order);
-		} else if (orderType === 'sell') {
-			this.sellOrders.push(order);
-		}
-
-		return order;
-	}
-
-	removeOrder(orderId) {
-		this.sellOrders = this.sellOrders.filter((iOrder) => iOrder.orderId !== orderId);
-		this.buyOrders = this.buyOrders.filter((iOrder) => iOrder.orderId !== orderId);
+	async queryProfiles() {
+		return {
+			profiles: Object.values(this.profilesMap),
+		};
 	}
 
 	async queryOrder(orderId) {
@@ -87,28 +73,69 @@ class Db {
 		return orders;
 	}
 
-	_makeProfile() {
-		const date = new Date();
-		return {
-			date: date,
-			profileId: this.profiles.length + 1,
-		};
+	async queryProfileOrders(profileId) {
+		const sell = this.sellOrders.filter((iOrder) => {
+			return iOrder.profileId === profileId;
+		});
+
+		const buy = this.sellOrders.filter((iOrder) => {
+			return iOrder.profileId === profileId;
+		});
+		const orders = sell.concat(buy);
+
+		return { orders };
+	}
+
+	addOrder({ profileId, orderType, goodsId, amount, price }) {
+		const order = this._makeOrder({ profileId, orderType, goodsId, amount, price });
+
+		if (orderType === 'buy') {
+			this.buyOrders.push(order);
+		} else if (orderType === 'sell') {
+			this.sellOrders.push(order);
+		}
+
+		return order;
+	}
+
+	removeOrder(orderId) {
+		this.sellOrders = this.sellOrders.filter((iOrder) => iOrder.orderId !== orderId);
+		this.buyOrders = this.buyOrders.filter((iOrder) => iOrder.orderId !== orderId);
 	}
 	
 	_makeOrder({ profileId, orderType, goodsId, amountType, price }) {
+		const profile = this._findProfile(profileId);
+// console.log(profileId, JSON.stringify(profile));
 		return {
 			id: this._makeOrderId(),
 			date: Date.now(),
-			profileId,
 			orderType,
 			goodsId,
 			amountType,
 			price,
+			profileId,
+			profile: profile,
+		};
+	}
+
+	_makeProfile({ tId, tNickname }) {
+		const date = Date.now();
+		const profileId = Date.now();
+
+		return {
+			regDate: date,
+			id: profileId,
+			tId,
+			tNickname,
 		};
 	}
 
 	_makeOrderId() {
 		return Date.now();
+	}
+
+	_findProfile(profileId) {
+		return this.profilesMap[profileId];
 	}
 }
 

@@ -15,22 +15,27 @@ module.exports = {
 	marketdata: async () => ({ version: database.version, goods: database.goods }),
 	marketstatus: async () => ({
 		status: {
-			profiles: database.profiles.length,
+			profiles: Object.keys(database.profilesMap).length,
 			buyOrders: database.buyOrders.length,
 			sellOrders: database.sellOrders.length,
 		}
 	}),
 // profiles
-	profileregister: async (profileId) => {
-		// const user = makeUser();
-
-		// market.profiles.push(user);
-		return {
-			error: 'not implemented'
-		};
+	profileauth: async (req, res) => {
+		return { profileId: 1 };
 	},
 
-	profileorders: async (req, res) => {
+	profilesregister: async (req, res) => { // todo auth
+		const { tId, tNickname } = req.body;
+		const profile = await database.addProfile({
+			tId,
+			tNickname,
+		});
+
+		return { status: 'success', profile };
+	},
+
+	profilesorders: async (req, res) => { // todo auth
 		const { profileId } = req.body;
 
 		if (profileId) {
@@ -38,6 +43,10 @@ module.exports = {
 		} else {
 			return { error: 'Invalid profileId' };
 		}
+	},
+
+	profileslist: async (req, res) => {
+		return await database.queryProfiles();
 	},
 // orders
 	ordersplace: async (req, res) => {
@@ -55,7 +64,7 @@ module.exports = {
 		}
 
 		const order = await database.addOrder({ profileId, orderType, goodsId, price });
-		// console.log(order);
+		console.log(JSON.stringify(order));
 		return { order: order, status: 'success' };
 	},
 
