@@ -41,6 +41,37 @@ class Db {
 		};
 	}
 
+	async queryProfileOrders(profileId) {
+		const sell = this.sellOrders.filter((iOrder) => {
+			return iOrder.profileId === profileId;
+		});
+
+		const buy = this.buyOrders.filter((iOrder) => {
+			return iOrder.profileId === profileId;
+		});
+		let orders = sell.concat(buy);
+
+		orders = orders.slice(0);
+		return orders;
+	}
+
+	async addOrder({ profileId, orderType, goodsId, amountType, price }) {
+		const order = this._makeOrder({ profileId, orderType, goodsId, amountType, price });
+
+		if (orderType === 'buy') {
+			this.buyOrders.push(order);
+		} else if (orderType === 'sell') {
+			this.sellOrders.push(order);
+		}
+
+		return order;
+	}
+
+	async removeOrder(orderId) {
+		this.sellOrders = this.sellOrders.filter((iOrder) => iOrder.orderId !== orderId);
+		this.buyOrders = this.buyOrders.filter((iOrder) => iOrder.orderId !== orderId);
+	}
+
 	async queryOrder(orderId) {
 		let order = this.sellOrders.find((iOrder) => iOrder.orderId === orderId);
 		if (order) {
@@ -64,45 +95,16 @@ class Db {
 
 		const marketOrders = orderType === 'buy' ? this.buyOrders : this.sellOrders;
 
-		const orders = marketOrders.filter((iOrder) => {
+		let orders = marketOrders.filter((iOrder) => {
 			const goods = this.goodsMap[iOrder.goodsId];
 
 			return goods.name.toLowerCase().indexOf(text) !== -1;
 		});
 
+		orders = orders.slice(0);
 		return orders;
 	}
 
-	async queryProfileOrders(profileId) {
-		const sell = this.sellOrders.filter((iOrder) => {
-			return iOrder.profileId === profileId;
-		});
-
-		const buy = this.sellOrders.filter((iOrder) => {
-			return iOrder.profileId === profileId;
-		});
-		const orders = sell.concat(buy);
-
-		return { orders };
-	}
-
-	addOrder({ profileId, orderType, goodsId, amount, price }) {
-		const order = this._makeOrder({ profileId, orderType, goodsId, amount, price });
-
-		if (orderType === 'buy') {
-			this.buyOrders.push(order);
-		} else if (orderType === 'sell') {
-			this.sellOrders.push(order);
-		}
-
-		return order;
-	}
-
-	removeOrder(orderId) {
-		this.sellOrders = this.sellOrders.filter((iOrder) => iOrder.orderId !== orderId);
-		this.buyOrders = this.buyOrders.filter((iOrder) => iOrder.orderId !== orderId);
-	}
-	
 	_makeOrder({ profileId, orderType, goodsId, amountType, price }) {
 		const profile = this._findProfile(profileId);
 // console.log(profileId, JSON.stringify(profile));

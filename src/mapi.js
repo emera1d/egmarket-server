@@ -1,9 +1,6 @@
 const Db = require('./db');
-
-const MIN_ORDER_PRICE = 1;
-const MAX_ORDER_PRICE = 1000000;
+const { meta } = require('./meta');
 const MAX_ORDERS_IN_SEARCH = 50;
-const ORDER_TYPES = ['buy', 'sell'];
 
 const database = new Db();
 
@@ -39,7 +36,10 @@ module.exports = {
 		const { profileId } = req.body;
 
 		if (profileId) {
-			return await database.queryProfileOrders(profileId);
+			let orders = await database.queryProfileOrders(profileId);
+
+			orders = orders.sort((iO1, iO2) => iO2.date - iO1.date)
+			return { orders };
 		} else {
 			return { error: 'Invalid profileId' };
 		}
@@ -50,21 +50,22 @@ module.exports = {
 	},
 // orders
 	ordersplace: async (req, res) => {
-		const { profileId, orderType, goodsId, price } = req.body;
+		const { profileId, orderType, goodsId, amountType, price } = req.body;
 		// console.log(profileId, orderType, goodsId, price, JSON.stringify(req.body));
 
 		// TODO auth
 		// const isValidProfile = database.profiles.hasOwnProperty(profileId);
-		const isValidOrderType = orderType === 'buy' || orderType === 'sell';
+		const isValidOrderType = meta.ORDER_TYPES.includes(orderType);
 		const isValidGoods = database.goods.some((iGoods) => iGoods.id === goodsId);
-		const isValidPrice = price >= MIN_ORDER_PRICE && price <= MAX_ORDER_PRICE;
-
-		if (!isValidPrice || !isValidGoods || !isValidOrderType) {
-			return { error: 'validation', isValidOrderType, isValidGoods, isValidPrice };
+		const isValidAmountType = meta.AMOUNT_TYPES.includes(amountType);
+		const isValidPrice = price >= meta.MIN_ORDER_PRICE && price <= meta.MAX_ORDER_PRICE;
+// console.log(price, meta.MIN_ORDER_PRICE, meta.MAX_ORDER_PRICE);
+		if (!isValidPrice || !isValidGoods || !isValidOrderType || !isValidAmountType) {
+			return { error: 'validation', isValidOrderType, isValidGoods, isValidAmountType, isValidPrice };
 		}
 
-		const order = await database.addOrder({ profileId, orderType, goodsId, price });
-		console.log(JSON.stringify(order));
+		const order = await database.addOrder({ profileId, orderType, goodsId, amountType, price });
+// console.log(JSON.stringify(order));
 		return { order: order, status: 'success' };
 	},
 
@@ -90,7 +91,7 @@ module.exports = {
 			return { orders: [], count: 0 };
 		}
 
-		const isValidOrderType = ORDER_TYPES.includes(orderType);
+		const isValidOrderType = meta.ORDER_TYPES.includes(orderType);
 
 		if (!isValidOrderType) {
 			return { error: 'validation', isValidOrderType, orderType, text, goodsId, type, subType };
@@ -107,6 +108,10 @@ module.exports = {
 		}
 
 		if (orders) {
+			orders = orders
+				.sort((iO1, iO2) => iO2.date - iO1.date)
+				.slice(0, MAX_ORDERS_IN_SEARCH);
+
 			return { orders: orders.slice(0, MAX_ORDERS_IN_SEARCH), count: orders.length };
 		} else {
 			return { error: 'orders/search', orderType, text, goodsId, type, subType  };
