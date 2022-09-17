@@ -1,4 +1,4 @@
-
+const { time } = require('./utils');
 const mapi = require('./mapi');
 
 const sendResponse = (res, data) => {
@@ -7,6 +7,8 @@ const sendResponse = (res, data) => {
 
 const bind = (action) => {
 	return async (req, res) => {
+		console.log(`[${time()}] ${req.method} ${req.url}`);
+
 		const result = await action(req, res);
 		const data = JSON.stringify(result);
 
@@ -34,15 +36,14 @@ module.exports.httpStart = (config) => {
 
 	app.post('/', bind(mapi.root));
 	app.post('/mapi', bind(mapi.mapi));
-	app.post('/mapi/status', bind(mapi.status));
-	app.post('/mapi/list', bind(mapi.list));
-	app.post('/mapi/profile/register', bind(mapi.profileregister));
-	app.post('/mapi/profile/orders', bind(mapi.profileorders));
 	app.post('/mapi/market/info', bind(mapi.marketinfo));
 	app.post('/mapi/market/data', bind(mapi.marketdata));
-	app.post('/mapi/searchforsale', bind(mapi.searchforsale));
-	app.post('/mapi/placeorder', bind(mapi.placeorder));
-	app.post('/mapi/revokeorder', bind(mapi.revokeorder));
+	app.post('/mapi/market/status', bind(mapi.marketstatus));
+	app.post('/mapi/profile/register', bind(mapi.profileregister));
+	app.post('/mapi/profile/orders', bind(mapi.profileorders));
+	app.post('/mapi/orders/place', bind(mapi.ordersplace));
+	app.post('/mapi/orders/revoke', bind(mapi.ordersrevoke));
+	app.post('/mapi/orders/search', bind(mapi.orderssearch));
 
 	// app.use('/', router);
 

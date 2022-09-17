@@ -26,7 +26,7 @@ class Db {
 		return this.goodsMap[goodsId];
 	}
 
-	queryProfileOrders(profileId) {
+	async queryProfileOrders(profileId) {
 		const sell = market.sellOrders.filter((iOrder) => {
 			return iOrder.profileId === profileId;
 		});
@@ -38,20 +38,8 @@ class Db {
 		return { buy: buy, sell: sell };
 	}
 
-	async querySellOrders(text) {
-		text = String(text).toLocaleLowerCase();
-
-		const orders = this.sellOrders.filter((iOrder) => {
-			const goods = this.goodsMap[iOrder.goodsId];
-
-			return goods.name.toLowerCase().indexOf(text) !== -1;
-		});
-
-		return orders;
-	}
-
-	placeOrder({ profileId, orderType, goodsId, price }) {
-		const order = this._makeOrder({ profileId, orderType, goodsId, price });
+	addOrder({ profileId, orderType, goodsId, amount, price }) {
+		const order = this._makeOrder({ profileId, orderType, goodsId, amount, price });
 
 		if (orderType === 'buy') {
 			this.buyOrders.push(order);
@@ -62,9 +50,41 @@ class Db {
 		return order;
 	}
 
-	revokeOrder(profileId, orderId) {
-		this.buyOrders.push(order);
-		this.sellOrders.push(order);
+	removeOrder(orderId) {
+		this.sellOrders = this.sellOrders.filter((iOrder) => iOrder.orderId !== orderId);
+		this.buyOrders = this.buyOrders.filter((iOrder) => iOrder.orderId !== orderId);
+	}
+
+	async queryOrder(orderId) {
+		let order = this.sellOrders.find((iOrder) => iOrder.orderId === orderId);
+		if (order) {
+			return order;
+		}
+
+		order = this.buyOrders.find((iOrder) => iOrder.orderId === orderId);
+		if (order) {
+			return order;
+		}
+
+		return null;
+	}
+
+	async queryOrders(orderType, text) {
+		text = String(text).toLocaleLowerCase().trim();
+
+		if (text === '') {
+			return [];
+		}
+
+		const marketOrders = orderType === 'buy' ? this.buyOrders : this.sellOrders;
+
+		const orders = marketOrders.filter((iOrder) => {
+			const goods = this.goodsMap[iOrder.goodsId];
+
+			return goods.name.toLowerCase().indexOf(text) !== -1;
+		});
+
+		return orders;
 	}
 
 	_makeProfile() {
@@ -75,14 +95,15 @@ class Db {
 		};
 	}
 	
-	_makeOrder({ profileId, orderType, goodsId, price }) {
+	_makeOrder({ profileId, orderType, goodsId, amountType, price }) {
 		return {
 			id: this._makeOrderId(),
 			date: Date.now(),
-			profileId: profileId,
-			orderType: orderType,
-			goodsId: goodsId,
-			price: price,
+			profileId,
+			orderType,
+			goodsId,
+			amountType,
+			price,
 		};
 	}
 
