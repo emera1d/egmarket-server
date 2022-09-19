@@ -1,8 +1,17 @@
+const { Client } = require('pg');
+const {
+	INSERT_PROFILES,
+	SELECT_PROFILES,
+	SELECT_PROFILES_BY_TID,
+} = require('../db/queries');
 const goodsDb = require('../data/ewg_db.json');
+const { envConfig } = require('./config/env');
+
+const POSTGRES_CONNECTION_URL = envConfig.get('POSTGRES_CONNECTION_URL');
 
 const PROFILE_ID_START = 1000;
 
-class Db {
+class CDatabase {
 	constructor() {
 		this.version = goodsDb.version;
 		this.goods = goodsDb.goods;
@@ -20,41 +29,53 @@ class Db {
 		this.statistics = {};
 	}
 
-	init() {
+	async connect() {
+		this.pclient = new Client({
+			connectionString: POSTGRES_CONNECTION_URL,
+			ssl: {
+				rejectUnauthorized: false
+			}
+		});
 
+		const result = await this.pclient.connect();
+		console.log('[DB] postgres connected');
 	}
-
-	start() {
-
-	}
-
-	getGoods(goodsId) {
-		return this.goodsMap[goodsId];
-	}
-
+	// done
 	async addProfile({ telegramId, username }) {
-		const profile = this._makeProfile({ telegramId, username });
+		const res = await this.pclient.query(INSERT_PROFILES, [
+			Date.now(),
+			telegramId,
+			username,
+			''
+		]);
 
-		this.profilesMap[profile.id] = profile;
-
-		return profile;
+		return { telegramId, username };
 	}
-
+	// done
 	async queryProfile(data) {
 		const { profileId, telegramId } = data;
-		let profile;
-// console.log(JSON.stringify(data));
-// console.log(JSON.stringify(this.profilesMap));
+		let res;
+
 		if (profileId) {
-			profile = this.profilesMap[profileId] || null;
-		} else if (telegramId) {
-			profile = Object.values(this.profilesMap)
-				.find((iProfile) => iProfile.telegramId === telegramId) || null;
+			res = await this.pclient.query(SELECT_PROFILES_BY_PID, [
+				profileId
+			]);
+		} else {
+			res = await this.pclient.query(SELECT_PROFILES_BY_TID, [
+				telegramId
+			]);
+		}
+
+		let profile = null;
+		const row = res.rows[0];
+		if (row) {
+			profile = this._rowToProfile(row);
 		}
 
 		return { profile };
 	}
 
+	// todo
 	async updateProfile(query, data) {
 		const { profile } = await this.queryProfile(query);
 
@@ -62,7 +83,7 @@ class Db {
 			this.profilesMap[profile.id] = Object.assign({}, profile, data);
 		} 
 	}
-
+	// todo
 	async queryProfileOrders(profileId) {
 		const sell = this.sellOrders.filter((iOrder) => {
 			return iOrder.profileId === profileId;
@@ -76,15 +97,18 @@ class Db {
 		orders = orders.slice(0);
 		return orders;
 	}
-
+	// done
 	async queryProfiles() {
-		return {
-			profiles: Object.values(this.profilesMap),
-		};
-	}
+		let profiles = null;
+		const res = await this.pclient.query(SELECT_PROFILES);
 
+		profiles = res.rows.map(this._rowToProfile);
+
+		return { profiles };
+	}
+	// todo
 	async addOrder({ profileId, orderType, goodsId, amountType, price }) {
-		const order = this._makeOrder({ profileId, orderType, goodsId, amountType, price });
+		const order = await this._makeOrder({ profileId, orderType, goodsId, amountType, price });
 
 		if (orderType === 'buy') {
 			this.buyOrders.push(order);
@@ -143,8 +167,22 @@ class Db {
 		return orders;
 	}
 
+	getGoods(goodsId) {
+		return this.goodsMap[goodsId];
+	}
+
+// private
+	_rowToProfile(row) {
+		return {
+			id: row.id,
+			regDate: row.reg_date,
+			telegramId: row.telegram_id,
+			username: row.username,
+		};
+	}
+
 	_makeOrder({ profileId, orderType, goodsId, amountType, price }) {
-		const profile = this._findProfile(profileId);
+		const { profile } = await this.queryProfile({ profileId });
 // console.log(profileId, JSON.stringify(profile));
 		return {
 			id: this._makeOrderId(),
@@ -162,20 +200,6 @@ class Db {
 		};
 	}
 
-	_makeProfile({ telegramId, username }) {
-		const date = Date.now();
-		// todo rework
-		const profileId = PROFILE_ID_START + Object.keys(this.profilesMap).length; // Date.now();
-
-		return {
-			regDate: date,
-			id: profileId,
-			telegramId,
-			username,
-			// otp: '333',
-		};
-	}
-
 	_makeOrderId() {
 		return Date.now();
 	}
@@ -185,4 +209,4 @@ class Db {
 	}
 }
 
-module.exports = Db;
+module.exports = CDatabase;

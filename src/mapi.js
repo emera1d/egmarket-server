@@ -2,11 +2,13 @@ const { meta } = require('./config/meta');
 const { appConfig } = require('./config/appConfig');
 const { time } = require('./utils');
 
-const Db = require('./db');
+const CDatabase = require('./database');
 const { CSession } = require('./session');
 
 const session = new CSession();
-const database = new Db();
+const database = new CDatabase();
+
+database.connect();
 
 class CMapi {
 	constructor() {
@@ -113,7 +115,7 @@ class CMapi {
 		}
 	}
 
-	async profilesregister(req, res) { // todo au(req, res)th
+	async profilesregister(req, res) {
 		const { telegramId, username } = req.body;
 
 		return await this.profileRegister({ telegramId, username });

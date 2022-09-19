@@ -1,6 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
 const { envConfig } = require('./config/env');
-// import { sleep } from "../utils";
 
 const BOT_TOKEN = envConfig.get('TELEGRAM_BOT_TOKEN');
 
