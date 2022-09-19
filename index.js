@@ -1,13 +1,16 @@
-const config = {
-	port: process.env.PORT || 3300
-};
-
 const httpServer = require('./src/http-server');
-// const telegramBot = require('./src/telegram-bot');
+const telegramBot = require('./src/telegram-bot');
 
 // api server
-httpServer.httpStart(config);
+const mapi = httpServer.httpStart();
+mapi.on({
+	onGetOtp: async (params) => await telegramBot.sendOtp(params),
+});
 
 // telegram bot
-// telegramBot.init(config);
-// telegramBot.start();
+telegramBot.init();
+telegramBot.on({
+	onRegistration: async (params) => await mapi.profileRegister(params),
+});
+
+telegramBot.start();

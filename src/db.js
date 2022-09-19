@@ -1,5 +1,7 @@
 const goodsDb = require('../data/ewg_db.json');
 
+const PROFILE_ID_START = 1000;
+
 class Db {
 	constructor() {
 		this.version = goodsDb.version;
@@ -13,6 +15,9 @@ class Db {
 		this.profilesMap = {};
 		this.buyOrders = [];
 		this.sellOrders = [];
+
+		// statistics
+		this.statistics = {};
 	}
 
 	init() {
@@ -27,18 +32,35 @@ class Db {
 		return this.goodsMap[goodsId];
 	}
 
-	async addProfile({ tId, tNickname }) {
-		const profile = this._makeProfile({ tId, tNickname });
+	async addProfile({ telegramId, username }) {
+		const profile = this._makeProfile({ telegramId, username });
 
 		this.profilesMap[profile.id] = profile;
 
 		return profile;
 	}
 
-	async queryProfiles() {
-		return {
-			profiles: Object.values(this.profilesMap),
-		};
+	async queryProfile(data) {
+		const { profileId, telegramId } = data;
+		let profile;
+// console.log(JSON.stringify(data));
+// console.log(JSON.stringify(this.profilesMap));
+		if (profileId) {
+			profile = this.profilesMap[profileId] || null;
+		} else if (telegramId) {
+			profile = Object.values(this.profilesMap)
+				.find((iProfile) => iProfile.telegramId === telegramId) || null;
+		}
+
+		return { profile };
+	}
+
+	async updateProfile(query, data) {
+		const { profile } = await this.queryProfile(query);
+
+		if (profile) {
+			this.profilesMap[profile.id] = Object.assign({}, profile, data);
+		} 
 	}
 
 	async queryProfileOrders(profileId) {
@@ -55,6 +77,12 @@ class Db {
 		return orders;
 	}
 
+	async queryProfiles() {
+		return {
+			profiles: Object.values(this.profilesMap),
+		};
+	}
+
 	async addOrder({ profileId, orderType, goodsId, amountType, price }) {
 		const order = this._makeOrder({ profileId, orderType, goodsId, amountType, price });
 
@@ -67,18 +95,26 @@ class Db {
 		return order;
 	}
 
+	async updateOrder({ orderId, date }) {
+		const order = await this.queryOrder(orderId);
+
+		order.date = date;
+
+		return order;
+	}
+
 	async removeOrder(orderId) {
-		this.sellOrders = this.sellOrders.filter((iOrder) => iOrder.orderId !== orderId);
-		this.buyOrders = this.buyOrders.filter((iOrder) => iOrder.orderId !== orderId);
+		this.sellOrders = this.sellOrders.filter((iOrder) => iOrder.id !== orderId);
+		this.buyOrders = this.buyOrders.filter((iOrder) => iOrder.id !== orderId);
 	}
 
 	async queryOrder(orderId) {
-		let order = this.sellOrders.find((iOrder) => iOrder.orderId === orderId);
+		let order = this.sellOrders.find((iOrder) => iOrder.id === orderId);
 		if (order) {
 			return order;
 		}
 
-		order = this.buyOrders.find((iOrder) => iOrder.orderId === orderId);
+		order = this.buyOrders.find((iOrder) => iOrder.id === orderId);
 		if (order) {
 			return order;
 		}
@@ -87,19 +123,21 @@ class Db {
 	}
 
 	async queryOrders(orderType, text) {
+		let orders;
+
 		text = String(text).toLocaleLowerCase().trim();
 
 		if (text === '') {
-			return [];
+			orders = orderType === 'buy' ? this.buyOrders : this.sellOrders;
+		} else {
+			const marketOrders = orderType === 'buy' ? this.buyOrders : this.sellOrders;
+	
+			orders = marketOrders.filter((iOrder) => {
+				const goods = this.goodsMap[iOrder.goodsId];
+	
+				return goods.name.toLowerCase().indexOf(text) !== -1;
+			});
 		}
-
-		const marketOrders = orderType === 'buy' ? this.buyOrders : this.sellOrders;
-
-		let orders = marketOrders.filter((iOrder) => {
-			const goods = this.goodsMap[iOrder.goodsId];
-
-			return goods.name.toLowerCase().indexOf(text) !== -1;
-		});
 
 		orders = orders.slice(0);
 		return orders;
@@ -116,19 +154,25 @@ class Db {
 			amountType,
 			price,
 			profileId,
-			profile: profile,
+			profile: {
+				id: profile.id,
+				telegramId: profile.telegramId,
+				username: profile.username,
+			},
 		};
 	}
 
-	_makeProfile({ tId, tNickname }) {
+	_makeProfile({ telegramId, username }) {
 		const date = Date.now();
-		const profileId = Date.now();
+		// todo rework
+		const profileId = PROFILE_ID_START + Object.keys(this.profilesMap).length; // Date.now();
 
 		return {
 			regDate: date,
 			id: profileId,
-			tId,
-			tNickname,
+			telegramId,
+			username,
+			// otp: '333',
 		};
 	}
 
