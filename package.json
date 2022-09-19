@@ -20,6 +20,7 @@
 		"mongodb": "^4.9.1",
 		"node-telegram-bot-api": "^0.53.0",
 		"nodemon": "^2.0.19",
+		"pg": "^8.8.0",
 		"uuid": "^9.0.0"
 	}
 }

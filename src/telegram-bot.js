@@ -1,10 +1,8 @@
 const TelegramBot = require('node-telegram-bot-api');
 const { envConfig } = require('./config/env');
 // import { sleep } from "../utils";
-// import { config } from '../config';
 
-// const BOT_TOKEN = envConfig.get('TELEGRAM_BOT_TOKEN');
-const BOT_TOKEN = '5735045515:AAF1wloyCrB1X3giSWwKaEY_SqUDiWdSO1U';
+const BOT_TOKEN = envConfig.get('TELEGRAM_BOT_TOKEN');
 
 class TelegramService {
 	constructor() {
