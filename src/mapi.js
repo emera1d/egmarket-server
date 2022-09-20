@@ -14,7 +14,8 @@ database.connect()
 .then(async () => {
 	console.log('[DB] postgres connected');
 
-	const stats = await database.getLastStatistics();
+	const today = statistics.makeDate();
+	const stats = await database.getStatistics(today);
 	if (stats) {
 		statistics.init(stats);
 	}

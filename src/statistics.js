@@ -14,7 +14,7 @@ class CStatistics {
 	}
 
 	init(data) {
-		const date = this._makeDate();
+		const date = this.makeDate();
 		if (data.date === date && data.statistics) {
 			this.statistics[date] = data.statistics; // TODO merge
 		} else {
@@ -23,7 +23,7 @@ class CStatistics {
 	}
 
 	push(tag) {
-		const date = this._makeDate();
+		const date = this.makeDate();
 
 		if (!this.statistics[date]) {
 			this.statistics[date] = {};
@@ -41,14 +41,14 @@ class CStatistics {
 	}
 
 	view() {
-		const date = this._makeDate();
+		const date = this.makeDate();
 
 		return JSON.stringify(this.statistics[date]);
 	}
 
 	_flush() {
 		if (this.events.onFlush) {
-			const todayDate = this._makeDate();
+			const todayDate = this.makeDate();
 			const keys = Object.keys(this.statistics);
 
 			// flush all stats
@@ -68,7 +68,7 @@ class CStatistics {
 		}
 	}
 
-	_makeDate() {
+	makeDate() {
 		const today = new Date();
 		const date = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
 
