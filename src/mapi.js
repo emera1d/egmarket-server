@@ -100,20 +100,19 @@ class CMapi {
 		const { telegramId, password } = req.body;
 		const isValidTId = telegramId && telegramId !== undefined;
 		const isValidPassword = Boolean(password);
-console.log('login', 1);
+
 		if (isValidTId && isValidPassword) {
 			const { profile } = await database.queryProfile({ telegramId });
 			const profileId = profile?.id;
-console.log('login', 2);
+
 			if (profile === null) {
 				return { success: false, message: 'Profile not found' };
 			}
-console.log('login', 3);
+
 			const isValidProfile = profile !== null;
 			const isValidProfilePassword = profile.otp === password;
-console.log('login', 4);
+
 			if (isValidProfile && isValidProfilePassword) {
-console.log('login', 5);
 				const sid = session.make();
 				await database.updateProfile({ profileId }, { sid, isAuth: true, otp: '' });
 
@@ -130,11 +129,9 @@ console.log('login', 5);
 					profile: this._clientProfile(profile),
 				};
 			} else {
-console.log('login', 6);
 				return { error: 'validation', isValidProfile, isValidProfilePassword };
 			}
 		} else {
-console.log('login', 7);
 			return { error: 'login', isValidTId, isValidPassword };
 		}
 	}
@@ -332,7 +329,8 @@ console.log('login', 7);
 
 	route(action, shouldAuth) {
 		return async (req, res) => {
-// console.log('action', action);
+console.log('action', action, req.cookies[appConfig.SID_COOKIE_NAME]);
+			
 			if (!this[action]) {
 				return { success: false, error: 'Invalid action' };
 			}
