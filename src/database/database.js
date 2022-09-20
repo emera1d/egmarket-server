@@ -133,7 +133,7 @@ class CDatabase {
 	}
 
 	async removeOrder(profileId, orderId) {
-		const res = await this.pclient.query(ORDER.DELETE_BY_OID, [orderId, profileId]);
+		const res = await this.pclient.query(ORDERS.DELETE_BY_OID, [orderId, profileId]);
 
 		return true;
 	}
