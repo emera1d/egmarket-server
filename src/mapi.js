@@ -119,8 +119,8 @@ class CMapi {
 				const maxAge = 30 *24 *60 *60 *1000;
 				// const maxAge = 90000
 				res.cookie(appConfig.SID_COOKIE_NAME, sid, {
-					// httpOnly: true,
-					httpOnly: false,
+					// httpOnly: false,
+					httpOnly: true,
 					maxAge,
 					sameSite: 'none',
 					secure: true,
