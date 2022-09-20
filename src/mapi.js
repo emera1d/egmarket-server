@@ -80,13 +80,17 @@ class CMapi {
 			return { success: false, isValidTId };
 		}
 
-		const otp = String(Date.now()).slice(-4);
-		await database.updateProfile({ telegramId }, { otp });
+		const { profile } = await database.queryProfile({ telegramId });
 
-		await this.events.onGetOtp({
-			telegramId,
-			otp,
-		});
+		if (!profile.otp) {
+			const otp = String(Date.now()).slice(-4);
+			await database.updateProfile({ telegramId }, { otp });
+	
+			await this.events.onGetOtp({
+				telegramId,
+				otp,
+			});
+		}
 
 		return { success: true };
 	}
