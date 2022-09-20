@@ -1,8 +1,8 @@
 // const uuid = require('uuid');
 const { debounce } = require('./utils/timer');
 
-// const FLUSH_DELAY = 1 *60 *1000;
-const FLUSH_DELAY = 1 *1000;
+const FLUSH_DELAY = 1 *60 *1000;
+// const FLUSH_DELAY = 1 *1000;
 
 class CStatistics {
 
