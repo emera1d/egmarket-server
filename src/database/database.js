@@ -165,8 +165,8 @@ class CDatabase {
 		return { orders };
 	}
 // statistics
-	async getLastStatistics() {
-		const res = await this.pclient.query(STATISTICS.SELECT_LAST);
+	async getStatistics(date) {
+		const res = await this.pclient.query(STATISTICS.SELECT_BY_DATE, [ date ]);
 		const data = res.rows[0] || null;
 
 		if (data) {

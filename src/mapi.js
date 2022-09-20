@@ -20,7 +20,7 @@ database.connect()
 	}
 	statistics.on({
 		onFlush: async (stats) => {
-			const dbRes = await database.getLastStatistics();
+			const dbRes = await database.getStatistics(stats.date);
 
 			if (dbRes && dbRes.date === stats.date) {
 				const res = await database.updateStatistics(stats);		
