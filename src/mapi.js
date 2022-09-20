@@ -128,7 +128,7 @@ class CMapi {
 				return { 
 					success: true,
 					profile: this._clientProfile(profile),
-					token: sid,
+					// token: sid,
 				};
 			} else {
 				return { error: 'validation', isValidProfile, isValidProfilePassword };
