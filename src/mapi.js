@@ -116,18 +116,19 @@ class CMapi {
 				const sid = session.make();
 				await database.updateProfile({ profileId }, { sid, isAuth: true, otp: '' });
 
-				const maxAge = 30 *24 *60 *60 *1000;
-				// const maxAge = 90000
-				res.cookie(appConfig.SID_COOKIE_NAME, sid, {
-					// httpOnly: false,
-					httpOnly: true,
-					maxAge,
-					sameSite: 'none',
-					secure: true,
-				});
+				// const maxAge = 30 *24 *60 *60 *1000;
+				// // const maxAge = 90000
+				// res.cookie(appConfig.SID_COOKIE_NAME, sid, {
+				// 	// httpOnly: false,
+				// 	httpOnly: true,
+				// 	maxAge,
+				// 	sameSite: 'none',
+				// 	secure: true,
+				// });
 				return { 
 					success: true,
 					profile: this._clientProfile(profile),
+					token: sid,
 				};
 			} else {
 				return { error: 'validation', isValidProfile, isValidProfilePassword };
@@ -306,7 +307,9 @@ class CMapi {
 	}
 
 	async _getSessionProfile(req) {
-		const sid = req.cookies[appConfig.SID_COOKIE_NAME];
+		// const sid = req.cookies[appConfig.SID_COOKIE_NAME];
+		const { token } = req.body;
+		const sid = token;
 
 		if (sid) {
 			const sessionData = session.get(sid);
@@ -330,7 +333,7 @@ class CMapi {
 
 	route(action, shouldAuth) {
 		return async (req, res) => {
-console.log('action', action, req.cookies[appConfig.SID_COOKIE_NAME]);
+// console.log('action', action, req.cookies[appConfig.SID_COOKIE_NAME]);
 			
 			if (!this[action]) {
 				return { success: false, error: 'Invalid action' };
