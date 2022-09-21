@@ -34,7 +34,7 @@ const httpServerConfig = {
 	port: process.env.PORT || 3300,
 
 	CORS_DOMAINS,
-	corsOptions,
+	// corsOptions,
 	// session,
 };
 
