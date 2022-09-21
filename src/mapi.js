@@ -328,6 +328,7 @@ class CMapi {
 				const sessionData = await this._getSessionProfile(req);
 				if (sessionData === null) {
 					res.send(JSON.stringify({ success: false, error: 'Auth failed' }));
+					return;
 				}
 			}
 // console.log('action call', action);
