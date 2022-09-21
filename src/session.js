@@ -6,36 +6,16 @@ class CSession {
 		this.map = {};
 	}
 
-	add(data) {
-		const sid = uuid.v4();
-		this.map[sid] = data;
-
-		return sid;
-	}
-
-	set(sid, data) {
-		if (this.map[sid]) {
-			this.map[sid] = Object.assign({}, this.map[sid], data);
-		} 
-	}
-
 	get(sid) {
 		return this.map[sid];
 	}
 
-	remove(sid) {
-		delete this.map[sid];
+	set(sid, data) {
+		this.map[sid] = data;
 	}
 
-	has(sid) {
-		return this.map.hasOwnProperty(sid);
-	}
-
-	find(fn) {
-		const sid = Object.keys(this.map)
-			.find((iSid) => fn(this.map[iSid]));
-
-		return sid;
+	make() {
+		return uuid.v4();
 	}
 }
 

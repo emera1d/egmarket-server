@@ -1,14 +1,35 @@
-const { meta } = require('./config/meta');
 const { appConfig } = require('./config/appConfig');
+const { meta } = require('./config/meta');
 const { time } = require('./utils');
 
-const CDatabase = require('./database');
+const { CDatabase } = require('./database/database');
 const { CSession } = require('./session');
+const { CStatistics } = require('./statistics');
 
 const session = new CSession();
 const database = new CDatabase();
+const statistics = new CStatistics();
 
-database.connect();
+database.connect()
+.then(async () => {
+	console.log('[DB] postgres connected');
+
+	const stats = await database.getLastStatistics();
+	if (stats) {
+		statistics.init(stats);
+	}
+	statistics.on({
+		onFlush: async (stats) => {
+			const dbRes = await database.getLastStatistics();
+
+			if (dbRes && dbRes.date === stats.date) {
+				const res = await database.updateStatistics(stats);		
+			} else {
+				const res = await database.addStatistics(stats);		
+			}
+		}
+	})
+});
 
 class CMapi {
 	constructor() {
@@ -19,38 +40,34 @@ class CMapi {
 		return { name: 'mapi' }
 	}
 	async mapi() { return { name: 'mapi', version: '1.0.0', ts: Date.now() } }
-	async statistics() { return { statistics: database.statistics } }
-// market
+	async statistics() { return { statistics: statistics.view() } }
 	async marketinfo() { return { version: database.version } }
 	async marketdata() { return { version: database.version, goods: database.goods } }
 	async marketstatus() {
 		return {
+			// status: {
+			// 	profiles: Object.keys(database.profilesMap).length,
+			// 	buyOrders: database.buyOrders.length,
+			// 	sellOrders: database.sellOrders.length,
+			// }
 			status: {
-				profiles: Object.keys(database.profilesMap).length,
-				buyOrders: database.buyOrders.length,
-				sellOrders: database.sellOrders.length,
+				profiles: 'todo',
+				buyOrders: 'todo',
+				sellOrders: 'todo'
 			}
 		};
 	}
 // profiles
 	async profilesauth(req, res) {
-		const sidValue = req.cookies[appConfig.SID_COOKIE_NAME];
+		const profile = await this._getSessionProfile(req);
 
-		if (sidValue) {
-			const hasSession = session.has(sidValue);
-
-			if (hasSession) {
-				const sessionData = session.get(sidValue);
-
-				return {
-					success: true,
-					profile: { id: sessionData.profileId },
-				};
-			} else {
-				return { success: false, error: 'session not found' };
-			}
+		if (profile) {
+			return {
+				success: true,
+				profile: this._clientProfile(profile),
+			};
 		} else {
-			return { success: false, error: 'auth' };
+			return { success: false, error: 'session not found' };
 		}
 	}
 
@@ -73,14 +90,13 @@ class CMapi {
 		return { success: true };
 	}
 
+	// TODO get telegram username for update
 	async profileslogin(req, res) {
 		const { telegramId, password } = req.body;
 		const isValidTId = telegramId && telegramId !== undefined;
 		const isValidPassword = Boolean(password);
 
 		if (isValidTId && isValidPassword) {
-			// const sid = req.cookies[appConfig.SID_COOKIE_NAME];
-
 			const { profile } = await database.queryProfile({ telegramId });
 			const profileId = profile?.id;
 
@@ -92,20 +108,15 @@ class CMapi {
 			const isValidProfilePassword = profile.otp === password;
 
 			if (isValidProfile && isValidProfilePassword) {
-				const existSid = session.find((iData) => iData.profileId === profileId);
+				const sid = session.make();
+				await database.updateProfile({ profileId }, { sid, isAuth: true, otp: '' });
 
-				if (existSid) {
-					session.remove(existSid);
-				}
-
-				await database.updateProfile({ profileId }, { otp: null });
-				const sid = session.add({ profileId: profileId, isAuth: true });
-				const maxAge = 30 *24 *60 *60;
+				const maxAge = 30 *24 *60 *60 *1000;
 				// const maxAge = 90000
 				res.cookie(appConfig.SID_COOKIE_NAME, sid, { maxAge, httpOnly: true });
 				return { 
 					success: true,
-					profile: { id: profile.id },
+					profile: this._clientProfile(profile),
 				};
 			} else {
 				return { error: 'validation', isValidProfile, isValidProfilePassword };
@@ -122,11 +133,10 @@ class CMapi {
 	}
 
 	async profilesorders(req, res) {
-		const sid = req.cookies[appConfig.SID_COOKIE_NAME];
-		const sessionData = session.get(sid);
+		const profile = await this._getSessionProfile(req);
 
-		if (sessionData && sessionData.profileId) {
-			let orders = await database.queryProfileOrders(sessionData.profileId);
+		if (profile) {
+			let orders = await database.queryProfileOrders(profile.id);
 
 			orders = orders.sort((iO1, iO2) => iO2.date - iO1.date);
 			orders.forEach((iOrder) => {
@@ -137,19 +147,11 @@ class CMapi {
 
 			return { orders };
 		} else {
-			return { error: 'Invalid profileId' };
+			return { error: 'Profile not found' };
 		}
-	}
-
-	// todo remove
-	async profileslist(req, res) {
-		return await database.queryProfiles();
 	}
 // orders
 	async ordersplace(req, res) {
-		const sid = req.cookies[appConfig.SID_COOKIE_NAME];
-		const sessionData = session.get(sid);
-
 		const { orderType, goodsId, amountType, price } = req.body;
 
 		const isValidOrderType = meta.ORDER_TYPES.includes(orderType);
@@ -161,80 +163,82 @@ class CMapi {
 			return { error: 'validation', isValidOrderType, isValidGoods, isValidAmountType, isValidPrice };
 		}
 
-		const order = await database.addOrder({
-			profileId: sessionData.profileId,
-			orderType,
-			goodsId,
-			amountType,
-			price,
-		});
-	
-		return { order: order, status: 'success' };
+		// const sid = req.cookies[appConfig.SID_COOKIE_NAME];
+		// const { profile } = await database.queryProfile({ sid });
+		const profile = await this._getSessionProfile(req);
+		const { count } = await database.ordersCount({ profileId: profile.id });
+
+		if (count < meta.MAX_PROFILE_ORDERS) {
+			const dbRes = await database.addOrder({
+				profileId: profile.id,
+				telegramId: profile.telegramId,
+				username: profile.username,
+				orderType,
+				goodsId,
+				amountType,
+				price,
+			});
+
+			return { success: true };
+		} else {
+			return { success: false, message: 'Maximum orders' };
+		}
 	}
 
 	async ordersrevoke(req, res) {
-		const sid = req.cookies[appConfig.SID_COOKIE_NAME];
-		const sessionData = session.get(sid);
 		let { orderId } = req.body;
 
-		const order = await database.queryOrder(orderId);
-		const isValidOrder = order !== null;
+		const isValidOrder = Boolean(orderId)
 		if (!isValidOrder) {
-			return { success: false, message: 'validation', isValidOrder }
+			return { success: false, message: 'Invalid order', isValidOrder }
 		}
 
-		if (order.profile.id !== sessionData.profileId) {
-			return { success: false, message: 'Profile havet this order' }
-		}
-
-		const result = await database.removeOrder(orderId);
+		// const sid = req.cookies[appConfig.SID_COOKIE_NAME];
+		// const { profile } = await database.queryProfile({ sid });
+		const profile = await this._getSessionProfile(req);
+		const result = await database.removeOrder(profile.id, orderId);
 
 		return { success: true };
 	}
 
 	async ordersrenew(req, res) {
-		const sid = req.cookies[appConfig.SID_COOKIE_NAME];
-		const sessionData = session.get(sid);
 		let { orderId } = req.body;
 
-		const order = await database.queryOrder(orderId);
-		const isValidOrder = order !== null;
+		const isValidOrder = Boolean(orderId)
 		if (!isValidOrder) {
-			return { success: false, message: 'validation', isValidOrder }
+			return { success: false, message: 'Invalid order', isValidOrder }
 		}
 
-		if (order.profile.id !== sessionData.profileId) {
-			return { success: false, message: 'Profile havet this order' }
-		}
+		// const sid = req.cookies[appConfig.SID_COOKIE_NAME];
+		// const { profile } = await database.queryProfile({ sid });
+		const profile = await this._getSessionProfile(req);
+		const result = await database.updateOrder({
+			profileId: profile.id,
+			orderId,
+			date: Date.now(),
+		});
 
-		const result = await database.updateOrder({ orderId, date: Date.now() });
-		result.isExpired = false;
-
-		return { order: result };
+		return { success: true };
 	}
 
 	async orderssearch(req, res) {
-		let { orderType, text, goodsId, type, subType } = req.body;
-		text = String(text).trim();
-
-		// if (text === '') {
-		// 	return { orders: [], count: 0 };
-		// }
+		let { orderType, text } = req.body;
 
 		const isValidOrderType = meta.ORDER_TYPES.includes(orderType);
-
 		if (!isValidOrderType) {
-			return { error: 'validation', isValidOrderType, orderType, text, goodsId, type, subType };
+			return { error: 'validation', isValidOrderType };
 		}
 
+		text = String(text).trim();
+
 		let orders;
-		switch (orderType) {
-			case 'buy':
-				orders = await database.queryOrders('buy', text);
-				break;
-			case 'sell':
-				orders = await database.queryOrders('sell', text);
-				break;
+		if (text === '') {
+			const dbRes = await database.queryLastOrders({ orderType });
+			orders = dbRes.orders;
+		} else {
+			const goodsIds = this._findGoodsIds(text);
+			const dbRes = await database.queryOrders({ orderType, goodsIds });
+			orders = dbRes.orders;
 		}
 
 		if (orders) {
@@ -244,7 +248,7 @@ class CMapi {
 
 			return { orders: orders.slice(0, appConfig.MAX_ORDERS_IN_SEARCH), count: orders.length };
 		} else {
-			return { error: 'orders/search', orderType, text, goodsId, type, subType  };
+			return { error: 'orders/search', orderType, text, goodsId };
 		}
 	}
 
@@ -269,14 +273,43 @@ class CMapi {
 		return { success: true, profile };
 	}
 
-	async _checkAuth(req) {
+	_findGoodsIds(text) {
+		let goods = database.goods.filter((iGoods) => {
+			return iGoods.name.toLowerCase().indexOf(text) !== -1
+				&& this._canBeTraded(iGoods);
+		});
+		const ids = goods.map((iGoods) => iGoods.id);
+
+		return ids;
+	}
+
+	_canBeTraded(goods) {
+		return !goods.isDisabled && !goods.isPersonal;
+	}
+
+	_clientProfile(profile) {
+		return {
+			id: profile.id,
+			maxOrders: meta.MAX_PROFILE_ORDERS,
+		};
+	}
+
+	async _getSessionProfile(req) {
 		const sid = req.cookies[appConfig.SID_COOKIE_NAME];
 
 		if (sid) {
 			const sessionData = session.get(sid);
-			return sessionData !== undefined && sessionData.isAuth;
+
+			if (sessionData) {
+				return sessionData;
+			} else {
+				const { profile } = await database.queryProfile({ sid });
+				session.set(sid, profile);
+
+				return profile;
+			}
 		} else {
-			return false;
+			return null;
 		}
 	}
 
@@ -292,19 +325,17 @@ class CMapi {
 			}
 // console.log('action auth', action);
 			if (shouldAuth) {
-				const isAuth = await this._checkAuth(req);
-				if (!isAuth) {
+				const sessionData = await this._getSessionProfile(req);
+				if (sessionData === null) {
 					res.send(JSON.stringify({ success: false, error: 'Auth failed' }));
-					return;
 				}
 			}
 // console.log('action call', action);
 			const method = req.method;
 			const url = req.url;
-			console.log(`[${time()}] ${method} ${url}`);
+			console.log('[MAPI]', `[${time()}] ${method} ${url}`);
 
-			const statValue = database.statistics[url];
-			database.statistics[url] = statValue ? statValue + 1 : 1;
+			statistics.push(url);
 
 			const result = await this[action].call(this, req, res);
 			const data = JSON.stringify(result);

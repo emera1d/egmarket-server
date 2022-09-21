@@ -36,16 +36,16 @@ const httpServer = (config) => {
 		next();
 	});
 
-	app.get('/mapi/statistics', mapi.route(mapi.statistics));
+	// stats
+	app.get('/', mapi.route('root'));
+	app.get('/mapi', mapi.route('mapi'));
+	app.get('/mapi/statistics', mapi.route('statistics'));
 
-	app.post('/', mapi.route(mapi.root));
-	app.post('/mapi', mapi.route(mapi.mapi));
 	app.post('/mapi/market/info', mapi.route('marketinfo'));
 	app.post('/mapi/market/data', mapi.route('marketdata'));
 	app.post('/mapi/market/status', mapi.route('marketstatus'));
 	app.post('/mapi/profiles/auth', mapi.route('profilesauth'));
 	app.post('/mapi/profiles/getotp', mapi.route('profilesgetotp'));
-	app.post('/mapi/profiles/list', mapi.route('profileslist'));
 	app.post('/mapi/profiles/login', mapi.route('profileslogin'));
 	app.post('/mapi/profiles/orders', mapi.route('profilesorders', true));
 	// app.post('/mapi/profiles/register', mapi.route('profilesregister'));

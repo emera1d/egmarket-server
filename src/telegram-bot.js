@@ -41,7 +41,7 @@ class TelegramService {
 		if (text[0] === '/') {
 			const result = await this.processCommand(text, from);
 
-			return await this.telegram.sendMessage(id, result.message);
+			// return await this.telegram.sendMessage(id, result.message);
 		} else {
 			return await this.telegram.sendMessage(id, text);
 		}
@@ -63,16 +63,49 @@ class TelegramService {
 		const cmd = text.substring(1, wsIndex !== -1 ? wsIindex : undefined);
 		const params = wsIndex !== -1 ? text.substring(wsIndex) : '';
 		let res;
+		let msg;
 
 		switch (cmd) {
 			case 'start':
 				res = await this.events.onRegistration({ telegramId: user.id, username: user.username });
-				return { message: res.success ? 'Welcome to market' : 'Welcome back to market' };
+				msg = { message: res.success ? 'Добро пожаловать на рынок' : 'Добро пожаловать' };
+				await this.telegram.sendMessage(user.id, msg.message, {
+					reply_markup: {
+						inline_keyboard: [[{
+							text: 'Открыть рынок',
+							web_app: { url: 'https://egmarket.pages.dev' }
+						}]]
+					}
+				});
+				return 
 
 			case 'reg':
 				res = await this.events.onRegistration({ telegramId: user.id, username: user.username });
-				return { message: res.success ? 'Registered' : res.message };
+				msg = { message: res.success ? 'Регистрация завершена' : res.message };
+				await this.telegram.sendMessage(user.id, msg.message);
+				return;
 
+			case 'btnpwa':
+				res = await this.events.onRegistration({ telegramId: user.id, username: user.username });
+				msg = { message: res.success ? 'Registered' : res.message };
+				// await this.telegram.sendMessage(user.id, 'btnpwa', {
+				// 	reply_markup: {
+				// 		inline_keyboard: [[{
+				// 			text: 'Открыть рынок',
+				// 			web_app: { url: 'https://egmarket.pages.dev' }
+				// 		}]]
+				// 	}
+				// });
+				return;
+			// case 'code':
+			// 	this.telegram.sendMessage(user.id, 'Share:', {
+			// 		reply_markup: {
+			// 			inline_keyboard: [[{
+			// 				text: 'Share with your friends',
+			// 				switch_inline_query: 'share'
+			// 			}]]
+			// 		}
+			// 	});
 			default:
 				return { message: 'Invalid comman' };
 		}
