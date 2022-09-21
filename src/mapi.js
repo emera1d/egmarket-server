@@ -287,6 +287,8 @@ class CMapi {
 	}
 
 	_findGoodsIds(text) {
+		text = text.toLowerCase();
+
 		let goods = database.goods.filter((iGoods) => {
 			return iGoods.name.toLowerCase().indexOf(text) !== -1
 				&& this._canBeTraded(iGoods);
