@@ -55,7 +55,7 @@ class TelegramService {
 	}
 
 	async sendOtp({ telegramId, otp }) {
-		await this.telegram.sendMessage(telegramId, otp);
+		await this.sendMessage(telegramId, otp);
 	}
 
 	async processCommand(text, user) {
@@ -69,7 +69,7 @@ class TelegramService {
 			case 'start':
 				res = await this.events.onStart({ telegramId: user.id, username: user.username });
 				msg = { message: res.success ? 'Добро пожаловать на рынок' : 'Добро пожаловать' };
-				await this.telegram.sendMessage(user.id, msg.message, {
+				await this.sendMessage(user.id, msg.message, {
 					reply_markup: {
 						inline_keyboard: [[{
 							text: 'Открыть рынок',
@@ -82,7 +82,7 @@ class TelegramService {
 			case 'reg':
 				res = await this.events.onStart({ telegramId: user.id, username: user.username });
 				msg = { message: res.success ? 'Регистрация завершена' : res.message };
-				await this.telegram.sendMessage(user.id, msg.message);
+				await this.sendMessage(user.id, msg.message);
 				return;
 
 			case 'btnpwa':
@@ -109,6 +109,19 @@ class TelegramService {
 			default:
 				return { message: 'Invalid comman' };
 		}
+	}
+
+	async sendMessage(...args) {
+		let res = {};
+		
+		try {
+			res = await this.telegram.sendMessage(...args);
+		} catch (er) {
+			console.log('[TGM] error sendMessage', Object.keys(er));
+			res = { error: 'telegram.sendMessage' };
+		}
+
+		return res;
 	}
 
 	// sendChanelMessageWithDelay = async (id: string, msg: string) => {
