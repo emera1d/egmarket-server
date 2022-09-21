@@ -156,9 +156,10 @@ class CDatabase {
 		return { count: res.rowCount };
 	}
 
-	async queryLastOrders({ orderType }) {
+	async queryLastOrders({ orderType, count }) {
 		const res = await this.pclient.query(ORDERS.SELECT_LAST, [
 			orderType,
+			count,
 		]);
 		const orders = res.rows.map(this._rowToOrder);
 

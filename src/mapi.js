@@ -115,7 +115,7 @@ class CMapi {
 			if (isValidProfile && isValidProfilePassword) {
 				const sid = session.make();
 				await database.updateProfile({ profileId }, { sid, isAuth: true, otp: '' });
-
+				session.remove((iProfile) => iProfile.id === profileId);
 				// const maxAge = 30 *24 *60 *60 *1000;
 				// // const maxAge = 90000
 				// res.cookie(appConfig.SID_COOKIE_NAME, sid, {
@@ -245,7 +245,8 @@ class CMapi {
 
 		let orders;
 		if (text === '') {
-			const dbRes = await database.queryLastOrders({ orderType });
+			const count = 50;
+			const dbRes = await database.queryLastOrders({ orderType, count });
 			orders = dbRes.orders;
 		} else {
 			const goodsIds = this._findGoodsIds(text);
@@ -309,18 +310,21 @@ class CMapi {
 	async _getSessionProfile(req) {
 		// const sid = req.cookies[appConfig.SID_COOKIE_NAME];
 		const { token } = req.body;
-		const sid = token;
 
-		if (sid) {
-			const sessionData = session.get(sid);
+		if (token) {
+			const sessionData = session.get(token);
 
 			if (sessionData) {
 				return sessionData;
 			} else {
-				const { profile } = await database.queryProfile({ sid });
-				session.set(sid, profile);
+				const { profile } = await database.queryProfile({ sid: token });
 
-				return profile;
+				if (profile) {
+					session.set(token, profile);
+					return profile;
+				} else {
+					return null;
+				}
 			}
 		} else {
 			return null;

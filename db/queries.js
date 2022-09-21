@@ -71,7 +71,8 @@ const ORDERS_SELECT_SEARCH = `SELECT * FROM "ORDERS" WHERE order_type = $1 AND g
 const ORDERS_SELECT_LAST = `
 	SELECT * FROM "ORDERS"
 	WHERE order_type = $1
-	ORDER BY date DESC;
+	ORDER BY date DESC
+	LIMIT $2;
 `;
 const DELETE_ORDER_BY_OID = `DELETE FROM "ORDERS" WHERE id = $1 AND profile_id = $2`;
 const ORDERS_UPDATE = `

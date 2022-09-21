@@ -14,6 +14,16 @@ class CSession {
 		this.map[sid] = data;
 	}
 
+	remove(fn) {
+		Object.keys(this.map)
+			.forEach((iSid) => {
+				const res = fn(this.map[iSid]);
+				if (res) {
+					delete this.map[iSid];
+				}
+			});
+	}
+
 	make() {
 		return uuid.v4();
 	}

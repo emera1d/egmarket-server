@@ -67,7 +67,7 @@ class TelegramService {
 
 		switch (cmd) {
 			case 'start':
-				res = await this.events.onRegistration({ telegramId: user.id, username: user.username });
+				res = await this.events.onStart({ telegramId: user.id, username: user.username });
 				msg = { message: res.success ? 'Добро пожаловать на рынок' : 'Добро пожаловать' };
 				await this.telegram.sendMessage(user.id, msg.message, {
 					reply_markup: {
@@ -80,7 +80,7 @@ class TelegramService {
 				return 
 
 			case 'reg':
-				res = await this.events.onRegistration({ telegramId: user.id, username: user.username });
+				res = await this.events.onStart({ telegramId: user.id, username: user.username });
 				msg = { message: res.success ? 'Регистрация завершена' : res.message };
 				await this.telegram.sendMessage(user.id, msg.message);
 				return;

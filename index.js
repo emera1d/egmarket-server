@@ -10,7 +10,7 @@ mapi.on({
 // telegram bot
 telegramBot.init();
 telegramBot.on({
-	onRegistration: async (params) => await mapi.profileRegister(params),
+	onStart: async (params) => await mapi.profileRegister(params),
 });
 
 telegramBot.start();
