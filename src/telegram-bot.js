@@ -43,7 +43,7 @@ class TelegramService {
 
 			// return await this.telegram.sendMessage(id, result.message);
 		} else {
-			return await this.telegram.sendMessage(id, text);
+			// return await this.telegram.sendMessage(id, text);
 		}
 
 		// await telegramService.telegram.sendMessage(from.id, noMsg, {
